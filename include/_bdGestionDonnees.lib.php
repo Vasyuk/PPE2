@@ -17,7 +17,7 @@
 function connecterServeurBD() {
     $hote = "localhost";
     $login = "root";
-    $mdp = "privetik";
+    $mdp = "";
     return mysqli_connect($hote, $login, $mdp);
 }
 
@@ -212,8 +212,9 @@ function obtenirReqMoisFicheFrais($unIdVisiteur) {
     return $req ;
 }
 
+
 function obtenirReqUsers() {
-    $req = "select nom from Visiteur where admin = 0;";
+    $req = "select  prenom, nom, id from Visiteur where admin = 0;";
     return $req ;
 }
 
@@ -263,10 +264,24 @@ function obtenirReqEltsHorsForfaitFicheFrais($unMois, $unIdVisiteur) {
  * @return void
  */
 function supprimerLigneHF($idCnx, $unIdLigneHF) {
-    $requete = "delete from LigneFraisHorsForfait where id = " . $unIdLigneHF;
+    $requete = "delete from LigneFraisHorsForfait where id = " .$unIdLigneHF;
     mysqli_query($idCnx, $requete);
 }
 
+function refuserLigneHF($idCnx, $unIdLigneHF) {
+    $requeteTake = "select libelle from LigneFraisHorsForfait where id =" . $unIdLigneHF;
+    $refuse = mysqli_query($idCnx, $requeteTake);
+    $libelle= mysqli_fetch_assoc($refuse);
+    if (preg_match('/REFUSE: /',$libelle["libelle"])){
+      $texte = $libelle["libelle"];
+    }else{
+      $texte = "REFUSE: " . $libelle["libelle"];
+    }
+    $requetePut = "update LigneFraisHorsForfait set libelle = '" . $texte
+                . " ' where id = " . $unIdLigneHF;
+    mysqli_query($idCnx, $requetePut);
+    return $texte;
+}
 /**
  * Ajoute une nouvelle ligne hors forfait.
  * Ins�re dans la BD la ligne hors forfait de libell� $unLibelleHF du montant
@@ -312,6 +327,16 @@ function modifierEltsForfait($idCnx, $unMois, $unIdVisiteur, $desEltsForfait) {
                     . $unMois . "' and idFraisForfait='" . $idFraisForfait . "'";
       mysqli_query($idCnx, $requete);
     }
+    return $requete;
+}
+
+function validerEltsForfait($idCnx, $unMois, $unIdVisiteur) {
+  $mois = date("Y-m-d");
+  $requete = "update fichefrais set idEtat = '". $etat ."' and dateModif = '". $mois ."'
+               where idVisiteur = '" . $unIdVisiteur . "' and mois = '"
+              . $unMois . "'";
+  mysqli_query($idCnx, $requete);
+  return $requete;
 }
 
 /**
@@ -357,4 +382,19 @@ function modifierEtatFicheFrais($idCnx, $unMois, $unIdVisiteur, $unEtat) {
                $unIdVisiteur . "' and mois = '". $unMois . "'";
     mysqli_query($idCnx, $requete);
 }
+
+
+  function backup() {
+      $file = 'backup_'.@date("Y-m-d-H:i:s").'.gz';
+      $host = "localhost";
+      $db = 'gsb_valide';
+      $user = "root";
+      $pass = "privetik";
+      system(sprintf("/usr/local/mysql/bin/mysqldump --add-drop-table --create-options --skip-lock-tables --extended-insert --quick --set-charset --host=$host --user=$user --password=$pass  $db | gzip > tmp/$file"));
+
+   }
+
+   function restaure() {
+
+    }
 ?>
